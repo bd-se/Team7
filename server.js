@@ -165,6 +165,181 @@ app.post('/auth/signup', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// Get user statistics
+app.get('/user/stats', (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  db.all(
+    `SELECT COUNT(*) AS gamesPlayed, SUM(score > 0) AS gamesWon FROM game_history WHERE user_id = ?`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error querying database' });
+      }
+
+      const stats = rows[0];
+      res.status(200).json({
+        gamesPlayed: stats.gamesPlayed,
+        gamesWon: stats.gamesWon,
+        gamesLost: stats.gamesPlayed - stats.gamesWon
+      });
+    }
+  );
+});
+// Update /game/stand to save game result
+app.post('/game/stand', (req, res) => {
+  const { sessionId, userId } = req.body;
+  const session = gameSessions[sessionId];
+
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  const { blackjack, playerHand, dealerHand } = session;
+
+  // Dealer's turn
+  while (blackjack.calculateScore(dealerHand) < 17) {
+    dealerHand.push(blackjack.dealCard());
+  }
+
+  const playerScore = blackjack.calculateScore(playerHand);
+  const dealerScore = blackjack.calculateScore(dealerHand);
+
+  let result;
+  if (blackjack.isBust(dealerHand) || playerScore > dealerScore) {
+    result = 'win';
+  } else if (playerScore < dealerScore) {
+    result = 'lose';
+  } else {
+    result = 'draw';
+  }
+
+  session.status = 'completed';
+
+  // Save game result to database
+  saveGameResult(userId, playerScore, result);
+
+  res.status(200).json({
+    playerHand,
+    dealerHand,
+    playerScore,
+    dealerScore,
+    result,
+    message: `Game over. You ${result}.`,
+    status: session.status
+  });
+});
+// Persist game result to game_history
+const saveGameResult = (userId, score, result) => {
+  const datePlayed = new Date().toISOString();
+  db.run(
+    `INSERT INTO game_history (user_id, score, date_played) VALUES (?, ?, ?)`,
+    [userId, result === 'win' ? score : 0, datePlayed],
+    (err) => {
+      if (err) {
+        console.error('Error saving game result:', err.message);
+      }
+    }
+  );
+};
+// Player stands to end their turn
+app.post('/game/stand', (req, res) => {
+  const { sessionId } = req.body;
+  const session = gameSessions[sessionId];
+
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  const { blackjack, playerHand, dealerHand } = session;
+
+  // Dealer's turn
+  while (blackjack.calculateScore(dealerHand) < 17) {
+    dealerHand.push(blackjack.dealCard());
+  }
+
+  const playerScore = blackjack.calculateScore(playerHand);
+  const dealerScore = blackjack.calculateScore(dealerHand);
+
+  let result;
+  if (blackjack.isBust(dealerHand) || playerScore > dealerScore) {
+    result = 'win';
+  } else if (playerScore < dealerScore) {
+    result = 'lose';
+  } else {
+    result = 'draw';
+  }
+
+  session.status = 'completed';
+
+  res.status(200).json({
+    playerHand,
+    dealerHand,
+    playerScore,
+    dealerScore,
+    result,
+    message: `Game over. You ${result}.`,
+    status: session.status
+  });
+});
+// Player hits to receive another card
+app.post('/game/hit', (req, res) => {
+  const { sessionId } = req.body;
+  const session = gameSessions[sessionId];
+
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  const { blackjack, playerHand } = session;
+  const newCard = blackjack.dealCard();
+  playerHand.push(newCard);
+
+  if (blackjack.isBust(playerHand)) {
+    session.status = 'completed';
+    return res.status(200).json({
+      playerHand,
+      message: 'Bust! You lose.',
+      status: session.status
+    });
+  }
+
+  res.status(200).json({
+    playerHand,
+    message: 'Card dealt'
+  });
+});
+// Import Blackjack module
+const Blackjack = require('./blackjack');
+
+// In-memory game sessions
+const gameSessions = {};
+
+// Start a new game session
+app.post('/game/start', (req, res) => {
+  const sessionId = Date.now().toString(); // Simple session ID
+  const blackjack = new Blackjack();
+  const playerHand = [blackjack.dealCard(), blackjack.dealCard()];
+  const dealerHand = [blackjack.dealCard(), blackjack.dealCard()];
+
+  gameSessions[sessionId] = {
+    blackjack,
+    playerHand,
+    dealerHand,
+    status: 'in-progress'
+  };
+
+  res.status(200).json({
+    sessionId,
+    playerHand,
+    dealerHand: [dealerHand[0]], // Show only one dealer card
+    message: 'Game started'
+  });
+});
 
 // Start the server
 app.listen(PORT, () => {
