@@ -9,8 +9,13 @@ const db = new sqlite3.Database('./db.sqlite');
 const PORT = 3000;
 
 // Serve a welcome message at the root path
-app.get('/', (req, res) => {
-  res.send('Welcome to the Team7 Application!');
+const path = require('path');
+
+// Serve React application
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Middleware
