@@ -14,10 +14,6 @@ const path = require('path');
 // Serve React application
 app.use(express.static(path.join(__dirname, 'build')));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -349,6 +345,12 @@ app.post('/game/start', (req, res) => {
     dealerHand: [dealerHand[0]], // Show only one dealer card
     message: 'Game started'
   });
+});
+
+// Start the server
+// Serve React app for any other route (catch-all) AFTER API routes
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Start the server

@@ -4,7 +4,7 @@ import Hero from './components/Hero';
 import './styles/tailwind.css';
       <Hero />
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -15,14 +15,14 @@ import Profile from './pages/Profile';
 const AppRouter = () => {
   return (
     <Router>
-      <Switch>
+      <Routes>
         <Route exact path="/" component={Landing} />
         <Route path="/signup" component={Signup} />
         <Route path="/login" component={Login} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/game" component={Game} />
         <Route path="/profile" component={Profile} />
-      </Switch>
+      </Routes>
     </Router>
   );
 };
