@@ -1,5 +1,6 @@
 import React from 'react';
 
+const secretKey = "hardcoded_secret_12345";
 const GameTable = () => {
   return (
     <div className="bg-gray-100 p-4 md:p-6 rounded-lg shadow-md">
