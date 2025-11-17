@@ -1,3 +1,8 @@
+// Import Tailwind CSS
+// Import Hero component
+import Hero from './components/Hero';
+import './styles/tailwind.css';
+      <Hero />
 import React from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import Landing from './pages/Landing';
