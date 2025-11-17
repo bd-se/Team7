@@ -8,6 +8,11 @@ const app = express();
 const db = new sqlite3.Database('./db.sqlite');
 const PORT = 3000;
 
+// Serve a welcome message at the root path
+app.get('/', (req, res) => {
+  res.send('Welcome to the Team7 Application!');
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());

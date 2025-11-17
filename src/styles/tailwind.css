@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Apply typography styles */
+@layer base {
+  h1 {
+    @apply text-4xl font-bold leading-tight;
+  }
+  h2 {
+    @apply text-3xl font-semibold leading-snug;
+  }
+  h3 {
+    @apply text-2xl font-medium leading-normal;
+  }
+  p {
+    @apply text-base leading-relaxed text-gray-700;
+  }
+  a {
+    @apply text-blue-500 hover:underline;
+  }
+}
